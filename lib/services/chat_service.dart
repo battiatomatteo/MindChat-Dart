@@ -33,26 +33,26 @@ class ChatService {
       'timestamp': timestamp,
     });
 
-    // 🔥 CREA CONVERSAZIONE SE NON ESISTE (per il mittente)
+    // CREA CONVERSAZIONE SE NON ESISTE (per il mittente)
     await db.rawInsert('''
       INSERT OR IGNORE INTO conversations (myId, userId, lastMessage, timestamp, hasUnread)
       VALUES (?, ?, ?, ?, 0)
     ''', [senderId, receiverId, text, timestamp]);
 
-    // 🔥 CREA CONVERSAZIONE SE NON ESISTE (per il ricevente)
+    // CREA CONVERSAZIONE SE NON ESISTE (per il ricevente)
     await db.rawInsert('''
       INSERT OR IGNORE INTO conversations (myId, userId, lastMessage, timestamp, hasUnread)
       VALUES (?, ?, ?, ?, 1)
     ''', [receiverId, senderId, text, timestamp]);
 
-    // 🔥 Aggiorna conversazione del mittente
+    // Aggiorna conversazione del mittente
     await db.rawUpdate('''
       UPDATE conversations
       SET lastMessage = ?, timestamp = ?, hasUnread = 0
       WHERE myId = ? AND userId = ?
     ''', [text, timestamp, senderId, receiverId]);
 
-    // 🔥 Aggiorna conversazione del ricevente
+    // Aggiorna conversazione del ricevente
     await db.rawUpdate('''
       UPDATE conversations
       SET lastMessage = ?, timestamp = ?, hasUnread = 1

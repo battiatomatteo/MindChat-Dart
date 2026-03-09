@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 4, // 🔥 VERSIONE AGGIORNATA
+      version: 4, // VERSIONE AGGIORNATA
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -83,7 +83,7 @@ class DatabaseService {
     ''');
 
     // -------------------------------------------------------------
-    //  🔥 TABELLA CONVERSATIONS (con UNIQUE)
+    // TABELLA CONVERSATIONS (con UNIQUE)
     // -------------------------------------------------------------
     await db.execute('''
       CREATE TABLE conversations (

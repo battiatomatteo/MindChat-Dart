@@ -13,36 +13,49 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Controller dei campi input
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Gestisce la visibilità della password
   bool _showPassword = false;
 
+  // -------------------------------------------------------------
+  // Funzione chiamata quando premi "Accedi"
+  // -------------------------------------------------------------
   Future<void> _onLoginPressed() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Controllo credenziali nel database
     final user = await UserService.login(email, password);
 
     if (user != null) {
+      // Recupero deviceId salvato nel main
       final prefs = await SharedPreferences.getInstance();
       final deviceId = prefs.getString('deviceId');
 
+      // Registra il dispositivo come "loggato"
       await DeviceService.registerDevice(user['id'], deviceId!);
 
+      // Naviga alla Home
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => HomeScreen(myId: user['id']),
         ),
       );
-    }
-    else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Credenziali errate')));
+    } else {
+      // Credenziali errate → mostra errore
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Credenziali errate')),
+      );
     }
   }
 
+  // -------------------------------------------------------------
+  // UI
+  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,17 +65,21 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Titolo principale
               Text(
                 'Bentornato',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 8),
+
+              // Sottotitolo
               Text(
                 'Accedi per continuare',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 40),
 
+              // Card bianca con il form
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -76,14 +93,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+
+                // FORM DI LOGIN
                 child: Column(
                   children: [
+                    // Campo email
                     TextField(
                       controller: _emailController,
                       decoration: const InputDecoration(labelText: 'Email'),
                     ),
                     const SizedBox(height: 20),
 
+                    // Campo password
                     TextField(
                       controller: _passwordController,
                       obscureText: !_showPassword,
@@ -106,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 30),
 
+                    // Pulsante ACCEDI
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -119,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 25),
 
+              // Link alla registrazione
               Center(
                 child: TextButton(
                   onPressed: () {

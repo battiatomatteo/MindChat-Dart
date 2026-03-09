@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/chat_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  final int myId;
-  final int otherId;
-  final String otherUsername;
+  final int myId;            // ID dell'utente loggato
+  final int otherId;         // ID dell'altro utente
+  final String otherUsername; // Nome dell'altro utente
 
   const ChatScreen({
     super.key,
@@ -18,28 +18,40 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  // Controller per il campo di testo
   final TextEditingController _controller = TextEditingController();
+
+  // Controller per scrollare automaticamente in basso
   final ScrollController _scrollController = ScrollController();
 
+  // Lista dei messaggi caricati dal DB
   List<Map<String, dynamic>> messages = [];
 
   @override
   void initState() {
     super.initState();
-    _markAsRead();        // 🔥 segna i messaggi come letti appena entri
-    _loadMessages();
+    _markAsRead();   // Segna i messaggi come letti appena entri nella chat
+    _loadMessages(); // Carica i messaggi dal database
   }
 
+  // -------------------------------------------------------------
+  // Segna i messaggi dell'altro utente come "letti"
+  // -------------------------------------------------------------
   Future<void> _markAsRead() async {
     await ChatService.markAsRead(widget.myId, widget.otherId);
   }
 
+  // -------------------------------------------------------------
+  // Carica i messaggi dal database
+  // -------------------------------------------------------------
   Future<void> _loadMessages() async {
     final data = await ChatService.getMessages(widget.myId, widget.otherId);
+
     setState(() {
       messages = data;
     });
 
+    // Scroll automatico verso il basso dopo un breve delay
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -47,16 +59,25 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  // -------------------------------------------------------------
+  // Invia un messaggio
+  // -------------------------------------------------------------
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    // Salva il messaggio nel DB
     await ChatService.sendMessage(widget.myId, widget.otherId, text);
 
     _controller.clear();
-    await _loadMessages();   // 🔥 aggiorna subito la chat
+
+    // Ricarica i messaggi per aggiornare la UI
+    await _loadMessages();
   }
 
+  // -------------------------------------------------------------
+  // UI
+  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,8 +85,12 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text(widget.otherUsername),
         centerTitle: true,
       ),
+
       body: Column(
         children: [
+          // ---------------------------------------------------------
+          // Lista dei messaggi
+          // ---------------------------------------------------------
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -73,6 +98,8 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
+
+                // True se il messaggio è mio
                 final isMine = msg['senderId'] == widget.myId;
 
                 return Align(
@@ -98,7 +125,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // Input bar
+          // ---------------------------------------------------------
+          // Barra di input messaggio
+          // ---------------------------------------------------------
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -113,6 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: [
+                // Campo di testo
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -129,7 +159,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
+                // Pulsante invio
                 CircleAvatar(
                   radius: 26,
                   backgroundColor: Colors.blueAccent,

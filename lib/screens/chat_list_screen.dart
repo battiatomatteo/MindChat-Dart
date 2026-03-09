@@ -4,7 +4,7 @@ import '../services/chat_service.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
-  final int myId;
+  final int myId; // ID dell’utente loggato
 
   const ChatListScreen({super.key, required this.myId});
 
@@ -13,18 +13,23 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
+  // Lista delle conversazioni recuperate dal database
   List<Map<String, dynamic>> conversations = [];
 
   @override
   void initState() {
     super.initState();
-    _loadConversations();
+    _loadConversations(); // Carica le conversazioni all’avvio
   }
 
+  // -------------------------------------------------------------
+  // Carica tutte le conversazioni dell’utente loggato
+  // -------------------------------------------------------------
   Future<void> _loadConversations() async {
     try {
       final data = await ChatService.getConversations(widget.myId);
 
+      // Filtra eventuali righe incomplete per evitare crash
       final safeData = data.where((c) =>
           c['username'] != null &&
           c['timestamp'] != null &&
@@ -38,6 +43,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }
   }
 
+  // -------------------------------------------------------------
+  // UI
+  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,6 +53,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         title: const Text("Chat"),
         centerTitle: true,
         actions: [
+          // Pulsante per cercare nuovi utenti e iniziare nuove chat
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -54,12 +63,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   builder: (_) => UserSearchScreen(myId: widget.myId),
                 ),
               ).then((_) {
-                _loadConversations(); // 🔥 aggiorna quando torni
+                _loadConversations(); // 🔥 aggiorna la lista quando torni
               });
             },
           ),
         ],
       ),
+
+      // ---------------------------------------------------------
+      // Lista conversazioni
+      // ---------------------------------------------------------
       body: conversations.isEmpty
           ? const Center(child: Text("Nessuna conversazione"))
           : ListView.builder(
@@ -71,10 +84,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 final username = chat['username'] ?? "Utente";
                 final lastMessage = chat['lastMessage'] ?? "";
                 final timestamp = chat['timestamp'] ?? 0;
-                final hasUnread = chat['hasUnread'] ?? 0; // 🔥 nuovo campo
+                final hasUnread = chat['hasUnread'] ?? 0; // 🔥 badge "new"
 
                 return GestureDetector(
                   onTap: () {
+                    // Apri la chat selezionata
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -88,6 +102,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       _loadConversations(); // 🔥 aggiorna quando torni
                     });
                   },
+
+                  // -----------------------------------------------------
+                  // Card della conversazione
+                  // -----------------------------------------------------
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -102,8 +120,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ),
                       ],
                     ),
+
                     child: Row(
                       children: [
+                        // Avatar con iniziale dell’utente
                         CircleAvatar(
                           radius: 28,
                           backgroundColor: Colors.blueAccent,
@@ -116,7 +136,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 16),
+
+                        // Nome utente + ultimo messaggio
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +167,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                         const SizedBox(width: 10),
 
-                        // 🔥 BADGE "NEW"
+                        // 🔥 Badge "new" se ci sono messaggi non letti
                         if (hasUnread == 1)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -164,6 +187,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                         const SizedBox(width: 10),
 
+                        // Orario dell’ultimo messaggio
                         Text(
                           _formatTimestamp(timestamp),
                           style: const TextStyle(
@@ -180,6 +204,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
+  // -------------------------------------------------------------
+  // Formatta timestamp in HH:MM
+  // -------------------------------------------------------------
   String _formatTimestamp(int ts) {
     if (ts == 0) return "";
     final dt = DateTime.fromMillisecondsSinceEpoch(ts);
