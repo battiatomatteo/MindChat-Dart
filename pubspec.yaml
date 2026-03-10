@@ -24,5 +24,22 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
 
+  flutter_launcher_icons: ^0.13.1
+
+  flutter_native_splash: ^2.3.5
+
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/imgMindChat2.png"
+
+flutter_native_splash:
+  color: "#ADD8E6" # sfondo azzurro chiaro
+  image: assets/images/imgMindChat2.png
+  android: true
+  ios: true
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
