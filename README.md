@@ -1,4 +1,4 @@
-# MindCaht
+# MindChat
 
 ## 🚀 Setup del progetto Flutter
 
