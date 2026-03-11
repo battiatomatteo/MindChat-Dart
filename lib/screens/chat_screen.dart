@@ -83,7 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent,   // 🔥 colore blu
+        backgroundColor: Colors.blueAccent,
         title: Text(
           widget.otherUsername,
           style: const TextStyle(color: Colors.white), // testo bianco

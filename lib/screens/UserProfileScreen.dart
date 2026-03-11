@@ -59,7 +59,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profilo Utente"),
+        backgroundColor: Colors.blueAccent,
+        title: const Text("Profilo Utente", style: TextStyle(
+          color: Colors.white,   // 🔥 colore del testo
+          fontWeight: FontWeight.w600,
+        ),),
         centerTitle: true,
         actions: [
           IconButton(

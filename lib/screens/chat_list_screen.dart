@@ -50,7 +50,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Chat"),
+        backgroundColor: Colors.blueAccent,
+        title: const Text("Chat", style: TextStyle(
+          color: Colors.white,   // 🔥 colore del testo
+          fontWeight: FontWeight.w600,
+        ),),
         centerTitle: true,
         actions: [
           // Pulsante per cercare nuovi utenti e iniziare nuove chat
