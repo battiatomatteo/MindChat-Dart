@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
-import 'login_screen.dart';   // se hai un servizio per ottenere i dati utente
+import 'login_screen.dart';
+import 'SettingsScreen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final int userId;
@@ -13,6 +14,9 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   Map<String, dynamic>? user;
+  final TextEditingController _bioController = TextEditingController();
+
+  bool _isEditingBio = false; // 🔥 DEVE STARE QUI, NON NEL WIDGET
 
   @override
   void initState() {
@@ -22,21 +26,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _loadUser() async {
     final data = await UserService.getUserById(widget.userId);
+
+    if (data == null) return;
+
     setState(() {
       user = data;
+      _bioController.text = data['bio'] ?? "";
     });
   }
 
-  Future<void> _logout() async {
-    await UserService.logout(widget.userId);
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => LoginScreen()),
-      (route) => false,
+  Future<void> _saveBio() async {
+    final newBio = _bioController.text.trim();
+    await UserService.updateBio(widget.userId, newBio);
+
+    setState(() {
+      _isEditingBio = false;
+      user!['bio'] = newBio;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Bio aggiornata")),
     );
   }
 
+  
   @override
   Widget build(BuildContext context) {
     if (user == null) {
@@ -49,7 +62,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(
         title: const Text("Profilo Utente"),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => SettingsScreen(userId: widget.userId)),
+              );
+            },
+          ),
+        ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -74,8 +99,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             Text(
               user!['username'],
               style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
               ),
             ),
 
@@ -92,28 +117,123 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             const SizedBox(height: 30),
 
-            // BOX INFO UTENTE
+            // BOX INFO
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blueAccent, width: 2),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Info utente",
+                children: [
+                  const Text(
+                    "Informazioni",
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Text(
-                    "• ID utente\n• Data registrazione\n• Numero note\n• Numero chat\n(aggiungi ciò che vuoi)",
-                    style: TextStyle(fontSize: 15),
+
+                  const SizedBox(height: 20),
+
+                  // BIO + ICONA PENNA
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Bio",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isEditingBio = true;
+                          });
+                        },
+                        child: const Icon(
+                          Icons.edit,
+                          size: 20,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // CAMPO BIO
+                  _isEditingBio
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            TextField(
+                              controller: _bioController,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey[200],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                hintText: "Scrivi qualcosa su di te...",
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            GestureDetector(
+                              onTap: _saveBio,
+                              child: const Text(
+                                "Salva",
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          user!['bio']?.isNotEmpty == true
+                              ? user!['bio']
+                              : "Nessuna bio disponibile",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+
+                  const SizedBox(height: 20),
+
+                  // STATISTICHE
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _statBox(
+                        icon: Icons.note_alt_outlined,
+                        label: "Note",
+                        value: (user!['noteCount'] ?? 0).toString(),
+                        color: Colors.orange,
+                      ),
+                      _statBox(
+                        icon: Icons.chat_bubble_outline,
+                        label: "Interazioni",
+                        value: (user!['chatCount'] ?? 0).toString(),
+                        color: Colors.green,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -121,24 +241,47 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // LOGOUT BUTTON
-            ElevatedButton(
-              onPressed: _logout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 40, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                "Esci",
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
+            // LOGOUT
+            
           ],
         ),
+      ),
+    );
+  }
+
+  // BOX STATISTICHE
+  Widget _statBox({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      width: 110,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 4, // VERSIONE AGGIORNATA
+      version: 5, // VERSIONE AGGIORNATA
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -31,9 +31,13 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        bio TEXT,
+        noteCount INTEGER DEFAULT 0,
+        chatCount INTEGER DEFAULT 0
       );
     ''');
+
 
     await db.execute('''
       CREATE TABLE messages (
@@ -134,9 +138,11 @@ class DatabaseService {
       ''');
     }
 
-    // VERSIONE 4 → aggiunta UNIQUE(myId, userId)
-    if (oldVersion < 4) {
-      await db.execute('CREATE UNIQUE INDEX idx_conversations_unique ON conversations(myId, userId)');
+    // VERSIONE 5 → aggiunta bio, noteCount, chatCount
+    if (oldVersion < 5) {
+      await db.execute("ALTER TABLE users ADD COLUMN bio TEXT;");
+      await db.execute("ALTER TABLE users ADD COLUMN noteCount INTEGER DEFAULT 0;");
+      await db.execute("ALTER TABLE users ADD COLUMN chatCount INTEGER DEFAULT 0;");
     }
   }
 }
