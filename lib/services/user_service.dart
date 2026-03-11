@@ -91,17 +91,6 @@ class UserService {
   }
 
   // -------------------------------------------------------------
-  // INCREMENTA CHAT COUNT (solo se nuova interazione)
-  // -------------------------------------------------------------
-  static Future<void> incrementChatCount(int userId) async {
-    final db = await DatabaseService.database;
-    await db.rawUpdate(
-      "UPDATE users SET chatCount = chatCount + 1 WHERE id = ?",
-      [userId],
-    );
-  }
-
-  // -------------------------------------------------------------
   // LOGOUT
   // -------------------------------------------------------------
   static Future<void> logout(int userId) async {
@@ -173,5 +162,29 @@ class UserService {
 
     return true;
   }
+
+  static Future<void> incrementChatCount(int userId) async {
+    final db = await DatabaseService.database;
+
+    await db.rawUpdate('''
+      UPDATE users
+      SET chatCount = chatCount + 1
+      WHERE id = ?
+    ''', [userId]);
+  }
+
+  static Future<void> decrementChatCount(int userId) async {
+    final db = await DatabaseService.database;
+
+    await db.rawUpdate('''
+      UPDATE users
+      SET chatCount = CASE 
+        WHEN chatCount > 0 THEN chatCount - 1
+        ELSE 0
+      END
+      WHERE id = ?
+    ''', [userId]);
+  }
+
 
 }

@@ -228,7 +228,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                       _statBox(
                         icon: Icons.chat_bubble_outline,
-                        label: "Interazioni",
+                        label: "Amici",
                         value: (user!['chatCount'] ?? 0).toString(),
                         color: Colors.green,
                       ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/chat_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  final int myId;            // ID dell'utente loggato
-  final int otherId;         // ID dell'altro utente
+  final int myId;             // ID dell'utente loggato
+  final int otherId;          // ID dell'altro utente
   final String otherUsername; // Nome dell'altro utente
 
   const ChatScreen({
@@ -18,32 +18,44 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // Controller per il campo di testo
   final TextEditingController _controller = TextEditingController();
-
-  // Controller per scrollare automaticamente in basso
   final ScrollController _scrollController = ScrollController();
 
-  // Lista dei messaggi caricati dal DB
   List<Map<String, dynamic>> messages = [];
+
+  bool isFriend = false; // ⭐ stato locale
 
   @override
   void initState() {
     super.initState();
-    _markAsRead();   // Segna i messaggi come letti appena entri nella chat
-    _loadMessages(); // Carica i messaggi dal database
+    _markAsRead();
+    _loadMessages();
+    _loadFriendStatus();
   }
 
-  // -------------------------------------------------------------
-  // Segna i messaggi dell'altro utente come "letti"
-  // -------------------------------------------------------------
+  Future<void> _loadFriendStatus() async {
+    final result = await ChatService.isFriend(widget.myId, widget.otherId);
+    setState(() {
+      isFriend = result;
+    });
+  }
+
+  Future<void> _toggleFriend() async {
+    if (isFriend) {
+      await ChatService.removeFriend(widget.myId, widget.otherId);
+    } else {
+      await ChatService.addFriend(widget.myId, widget.otherId);
+    }
+
+    setState(() {
+      isFriend = !isFriend;
+    });
+  }
+
   Future<void> _markAsRead() async {
     await ChatService.markAsRead(widget.myId, widget.otherId);
   }
 
-  // -------------------------------------------------------------
-  // Carica i messaggi dal database
-  // -------------------------------------------------------------
   Future<void> _loadMessages() async {
     final data = await ChatService.getMessages(widget.myId, widget.otherId);
 
@@ -51,7 +63,6 @@ class _ChatScreenState extends State<ChatScreen> {
       messages = data;
     });
 
-    // Scroll automatico verso il basso dopo un breve delay
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -59,38 +70,38 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // -------------------------------------------------------------
-  // Invia un messaggio
-  // -------------------------------------------------------------
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // Salva il messaggio nel DB
     await ChatService.sendMessage(widget.myId, widget.otherId, text);
-
     _controller.clear();
-
-    // Ricarica i messaggi per aggiornare la UI
     await _loadMessages();
   }
 
-  // -------------------------------------------------------------
-  // UI
-  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherUsername),
+        backgroundColor: Colors.blueAccent,   // 🔥 colore blu
+        title: Text(
+          widget.otherUsername,
+          style: const TextStyle(color: Colors.white), // testo bianco
+        ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isFriend ? Icons.star : Icons.star_border,
+              color: isFriend ? Colors.yellow[700] : Colors.white, // icona visibile sul blu
+            ),
+            onPressed: _toggleFriend,
+          ),
+        ],
       ),
 
       body: Column(
         children: [
-          // ---------------------------------------------------------
-          // Lista dei messaggi
-          // ---------------------------------------------------------
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -98,24 +109,22 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
-
-                // True se il messaggio è mio
-                final isMine = msg['senderId'] == widget.myId;
+                final mine = msg['senderId'] == widget.myId;
 
                 return Align(
                   alignment:
-                      isMine ? Alignment.centerRight : Alignment.centerLeft,
+                      mine ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isMine ? Colors.blueAccent : Colors.grey[300],
+                      color: mine ? Colors.blueAccent : Colors.grey[300],
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       msg['text'],
                       style: TextStyle(
-                        color: isMine ? Colors.white : Colors.black87,
+                        color: mine ? Colors.white : Colors.black87,
                         fontSize: 16,
                       ),
                     ),
@@ -124,10 +133,6 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-
-          // ---------------------------------------------------------
-          // Barra di input messaggio
-          // ---------------------------------------------------------
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -142,7 +147,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: [
-                // Campo di testo
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -151,7 +155,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       filled: true,
                       fillColor: Colors.grey[200],
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 14),
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide.none,
@@ -159,10 +165,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
-                // Pulsante invio
                 CircleAvatar(
                   radius: 26,
                   backgroundColor: Colors.blueAccent,

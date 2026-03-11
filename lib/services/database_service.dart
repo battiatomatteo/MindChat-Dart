@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 5, // VERSIONE AGGIORNATA
+      version: 7, // VERSIONE AGGIORNATA
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -38,7 +38,6 @@ class DatabaseService {
       );
     ''');
 
-
     await db.execute('''
       CREATE TABLE messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +45,7 @@ class DatabaseService {
         receiverId INTEGER NOT NULL,
         text TEXT NOT NULL,
         timestamp INTEGER NOT NULL,
+        isRead INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (senderId) REFERENCES users(id),
         FOREIGN KEY (receiverId) REFERENCES users(id)
       );
@@ -86,9 +86,6 @@ class DatabaseService {
       );
     ''');
 
-    // -------------------------------------------------------------
-    // TABELLA CONVERSATIONS (con UNIQUE)
-    // -------------------------------------------------------------
     await db.execute('''
       CREATE TABLE conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,13 +99,21 @@ class DatabaseService {
         FOREIGN KEY (userId) REFERENCES users(id)
       );
     ''');
+
+    await db.execute('''
+      CREATE TABLE friends (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        myId INTEGER NOT NULL,
+        friendId INTEGER NOT NULL,
+        UNIQUE(myId, friendId)
+      );
+    ''');
   }
 
   // -------------------------------------------------------------
   //  UPGRADE DATABASE (quando aumenti version)
   // -------------------------------------------------------------
   static Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    // VERSIONE 2 → tabella devices
     if (oldVersion < 2) {
       await db.execute('''
         CREATE TABLE devices (
@@ -122,7 +127,6 @@ class DatabaseService {
       ''');
     }
 
-    // VERSIONE 3 → tabella conversations (senza UNIQUE)
     if (oldVersion < 3) {
       await db.execute('''
         CREATE TABLE conversations (
@@ -138,11 +142,20 @@ class DatabaseService {
       ''');
     }
 
-    // VERSIONE 5 → aggiunta bio, noteCount, chatCount
-    if (oldVersion < 5) {
-      await db.execute("ALTER TABLE users ADD COLUMN bio TEXT;");
-      await db.execute("ALTER TABLE users ADD COLUMN noteCount INTEGER DEFAULT 0;");
-      await db.execute("ALTER TABLE users ADD COLUMN chatCount INTEGER DEFAULT 0;");
+    if (oldVersion < 6) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS friends (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          myId INTEGER NOT NULL,
+          friendId INTEGER NOT NULL,
+          UNIQUE(myId, friendId)
+        );
+      ''');
+    }
+
+    // ⭐ AGGIUNTA COLONNA isRead
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE messages ADD COLUMN isRead INTEGER NOT NULL DEFAULT 0;');
     }
   }
 }
