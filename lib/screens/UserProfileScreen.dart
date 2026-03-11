@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
-import 'login_screen.dart';
 import 'SettingsScreen.dart';
 
 class UserProfileScreen extends StatefulWidget {
